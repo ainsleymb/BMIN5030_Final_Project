@@ -18,6 +18,8 @@ The goal of my project is to analyze disparities in patients with gestational di
 
 ## Introduction {#sec-introduction}
 
+Gestational diabetes affects \*\*\* patients annually and is associated with adverse birth outcomes including larger babies and babies experiencing low blood sugar after birth. Women with gestational diabetes are also more at risk for developing Type 2 diabetes in the future.
+
 Describe the problem addressed, its significance, and some background to motivate the problem. This should extend what is in the @sec-overview.
 
 Explain why your problem is interdisciplinary, what fields can contribute to its understanding, and incorporate background related to what you learned from meeting with faculty/staff.
