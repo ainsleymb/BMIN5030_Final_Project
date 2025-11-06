@@ -1,7 +1,7 @@
 ---
 title: "Your Title"
 subtitle: "BMIN5030 Final Project"
-author: "FirstName LastName"
+author: "Ainsley Bradbury"
 format: html
 editor: visual
 number-sections: true
