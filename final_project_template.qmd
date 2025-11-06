@@ -14,7 +14,7 @@ Use this template to complete your project throughout the course. Your Final Pro
 
 ## Overview {#sec-overview}
 
-Give a brief a description of your project and its goal(s), what data you are using to complete it, and what two faculty/staff in different fields you have spoken to about your project with a brief summary of what you learned from each person. Include a link to your final project GitHub repository.
+The goal of my project is to analyze disparities in patients with gestational diabetes. Specifically, I will create a model to predict whether a patient with gestational diabetes will be ordered inpatient insulin during delivery. Receiving inpatient insulin at delivery for gestational diabetes patients is an indicator of more sever gestational diabetes, so this model will help me uncover factors related to severe gestational diabetes.
 
 ## Introduction {#sec-introduction}
 
