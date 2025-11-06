@@ -18,13 +18,9 @@ The goal of my project is to analyze disparities in patients with gestational di
 
 ## Introduction {#sec-introduction}
 
-Gestational diabetes affects \*\*\* patients annually and is associated with adverse birth outcomes including larger babies and babies experiencing low blood sugar after birth. Women with gestational diabetes are also more at risk for developing Type 2 diabetes in the future.
+Gestational diabetes affects \*\*\* patients annually and is associated with adverse birth outcomes including larger babies and babies experiencing low blood sugar after birth. Women with gestational diabetes are also more at risk for developing Type 2 diabetes in the future. I have worked closely with patient with GDM during the past year and a half as a clinical research coordinator. While working with this patient population, I have noticed the importance of diet in regulating GDM. Many of my patients are immigrants and do not typically eat a normal American diet, so I believe that they do not benefit from nutrition consults as much as patients who are not immigrants. I want to analyze whether race and ethnicity have an impact on the severity of a patient's gestational diabetes.
 
-test test
-
-Describe the problem addressed, its significance, and some background to motivate the problem. This should extend what is in the @sec-overview.
-
-Explain why your problem is interdisciplinary, what fields can contribute to its understanding, and incorporate background related to what you learned from meeting with faculty/staff.
+This problem is interdisciplinary because...
 
 ## Methods {#sec-methods}
 
