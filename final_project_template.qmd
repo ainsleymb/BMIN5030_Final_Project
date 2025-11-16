@@ -10,11 +10,9 @@ embed-resources: true
 
 ------------------------------------------------------------------------
 
-Use this template to complete your project throughout the course. Your Final Project presentation will be based on the contents of this document. Replace the title/name above and text below with your own, but keep the headers. Feel free to change the theme and other display settings, although this is not required.
-
 ## Overview {#sec-overview}
 
-The goal of my project is to analyze disparities in patients with gestational diabetes. Specifically, I will create a model to predict whether a patient with gestational diabetes will be ordered inpatient insulin during delivery. Receiving inpatient insulin at delivery for gestational diabetes patients is an indicator of more sever gestational diabetes, so this model will help me uncover factors related to severe gestational diabetes.
+The purpose of my project is to compare pregnancy outcomes in patients with different types of diabetes. Specifically, I will compare outcomes for patient with pregestational diabetes to outcomes for patients with gestational diabetes. I will also conduct subsequent analyses to determine whether race, ethnicity, and insurance status affect outcomes for patients with diabetes, and whether these factors play a larger role in pregestational versus gestational diabetes.
 
 ## Introduction {#sec-introduction}
 
@@ -24,7 +22,154 @@ This problem is interdisciplinary because..
 
 ## Methods {#sec-methods}
 
-Describe the data used and general methodological approach used to address the problem described in the @sec-introduction. Subsequently, incorporate full R code necessary to retrieve and clean data, and perform analysis. Be sure to include a description of code so that others (including your future self) can understand what you are doing and why.
+To complete my analysis on pregnancy outcomes for patients with pregestational versus gestational diabetes, I will use the MIMIC-IV data set. MIMIC-IV contains demographics, diagnoses, procedures, prescription, and lab data for patients admitted to Bethlehem Israel Hospital from 2008 to 2022.
+
+First, I filtered the data for patients with a diagnosis of Type 1 Diabetes, Type 2 Diabetes, or Gestational Diabetes and a procedure for vaginal delivery or cesarean section. I also dropped patients who had a multiple delivery from the dataset. While cleaning the data, I also created dummy variables for the outcomes of interest.
+
+```{r}
+
+library(readr)
+library(dplyr)
+library(tidyr)
+library(stringr)
+
+diagnoses_icd <- read_csv("/Users/ainsleybradbury1/Downloads/mimic-iv-3.1/hosp/diagnoses_icd.csv.gz")
+patients <- read_csv("/Users/ainsleybradbury1/Downloads/mimic-iv-3.1/hosp/patients.csv.gz")
+prescriptions <- read_csv("/Users/ainsleybradbury1/Downloads/mimic-iv-3.1/hosp/prescriptions.csv.gz")
+admissions <- read_csv("/Users/ainsleybradbury1/Downloads/mimic-iv-3.1/hosp/admissions.csv.gz")
+procedures_icd <- read_csv("/Users/ainsleybradbury1/Downloads/mimic-iv-3.1/hosp/procedures_icd.csv.gz")
+
+#Create a datasset of only pregnant patients
+pregnant_dx <- diagnoses_icd %>%
+  filter(
+    (grepl("^[6][3-7][0-9]", icd_code)) |         # ICD-9 pregnancy codes 630–679
+      (grepl("^[Oo][0-9A]", icd_code))              # ICD-10 pregnancy codes O00–O9A
+  ) %>%
+  select(subject_id, hadm_id, icd_code) %>%
+  distinct()
+
+#Merge demographic data with pregnant patient dataset
+demo <- pregnant_dx %>%
+  distinct(subject_id, hadm_id) %>%
+  left_join(admissions %>%
+              select(subject_id, hadm_id, admittime, dischtime, insurance, admission_type),
+            by = c("subject_id", "hadm_id")) %>%
+  left_join(patients %>%
+              select(subject_id, gender, anchor_age),
+            by = "subject_id")
+
+#Diagnosis filters
+diagnosis_flags <- diagnoses_icd %>%
+  group_by(subject_id, hadm_id) %>%
+  summarise(
+    has_T1DM               = any(str_detect(icd_code, "^250\\.0[13]|^E10")),
+    has_T2DM               = any(str_detect(icd_code, "^250\\.0[02]|^E11")),
+    has_GDM                = any(str_detect(icd_code, "^6480|^O24[45]")),
+    has_GHTN               = any(str_detect(icd_code, "^6423|^O13")),
+    has_Preeclampsia       = any(str_detect(icd_code, "^6424|^O14")),
+    has_Infection          = any(str_detect(icd_code, "^647|^O85|^O86")),
+    has_Multiple_Gestation = any(str_detect(icd_code, "^651|^O30"))
+  )
+
+#Procedures
+procedure_flags <- procedures_icd %>%
+  group_by(subject_id, hadm_id) %>%
+  summarise(
+    has_Cesarean            = any(str_detect(icd_code, "^74|^10D00Z")),
+    has_Vaginal_Delivery    = any(str_detect(icd_code, "^72|^73|^10E0X")),
+    has_Laceration          = any(str_detect(icd_code, "^75|^O70")),
+    has_Induction           = any(str_detect(icd_code,
+                                            "^73\\.0|^73\\.1|^73\\.4|^73\\.01|^10E0"))
+  )
+
+#Demographics, diagnoses, and procedure data with admissions data
+
+pregnancy_summary <- admissions %>%  # your delivery-level table
+  select(hadm_id, subject_id, admittime, dischtime, deathtime, admission_type, insurance, language, race) %>%
+  left_join(demo, by = c("subject_id", "hadm_id")) %>%
+  left_join(diagnosis_flags, by = c("subject_id", "hadm_id")) %>%
+  left_join(procedure_flags, by = c("subject_id", "hadm_id")) %>%
+  mutate(across(starts_with("has_") | starts_with("received_"), ~replace_na(.x, FALSE)))
+
+#Drop patients without a delivery procedure and patients without a diabetes diagnosis. Also dropping patiets with a multiple delivery. 
+
+pregnancy_summary <- pregnancy_summary %>%
+  filter(has_Vaginal_Delivery | has_Cesarean) %>%
+  filter(!has_Multiple_Gestation | is.na(has_Multiple_Gestation)) %>%
+  filter(has_T1DM | has_T2DM | has_GDM)
+
+#Pregestational diabetes variable
+pregnancy_summary <- pregnancy_summary %>%
+  mutate(
+    has_Pregestational_DM = has_T1DM | has_T2DM   
+  )
+
+#Failed induction variable
+pregnancy_summary <- pregnancy_summary %>%
+  mutate(
+    failed_induction = has_Induction & has_Cesarean
+  )
+
+pregnancy_summary
+
+table1 <- pregnancy_summary %>%
+  summarise(
+    N = n(),
+    Age_mean = mean(anchor_age, na.rm = TRUE),
+    Age_sd   = sd(anchor_age, na.rm = TRUE),
+    Vaginal_Delivery_n = sum(has_Vaginal_Delivery),
+    Cesarean_n         = sum(has_Cesarean),
+    Induction_n        = sum(has_Induction),
+    Failed_Induction_n = sum(failed_induction),
+    T1DM_n = sum(has_T1DM),
+    T2DM_n = sum(has_T2DM),
+    GDM_n  = sum(has_GDM),
+    Pregestational_DM_n = sum(has_Pregestational_DM),
+    GHTN_n = sum(has_GHTN),
+    Preeclampsia_n = sum(has_Preeclampsia),
+    Laceration_n = sum(has_Laceration),
+    Infection_n  = sum(has_Infection)
+  )
+
+table1
+
+
+
+```
+
+Now that the data has been cleaned, I ran several regressions to compare delivery outcomes and complications between patient with pregestational diabetes versus gestational diabetes, controlling for race, ethnicity, patient age, and insurance status.
+
+```{r}
+
+#Failed induction
+
+
+
+#Laceration
+
+#Gestatonal Hypertension
+
+#Preeclampsia
+
+#Postpartum Infection
+
+```
+
+Next, I ran a series of regressions using delivery data for only patients with gestational diabetes to determine whether race, ethnicity, insurance status, and maternal age affect outcomes.
+
+```{r}
+
+#Failed induction
+
+#Laceration
+
+#Gestatonal Hypertension
+
+#Preeclampsia
+
+#Postpartum Infection
+
+```
 
 ## Results {#sec-results}
 
