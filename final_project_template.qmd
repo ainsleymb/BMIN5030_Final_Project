@@ -1,5 +1,5 @@
 ---
-title: "Your Title"
+title: "Prevalence of Gestational Diabetes by Race, Ethnicity, and Insurance at Beth Israel Hospital"
 subtitle: "BMIN5030 Final Project"
 author: "Ainsley Bradbury"
 format: html
